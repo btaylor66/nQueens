@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
+import sys
+import getopt
 import logging
-#logging.basicConfig(level=logging.DEBUG)
-logging.basicConfig(level=logging.ERROR)
+
+#logging.basicConfig(level=logging.ERROR)
 
 class Board:
 
@@ -11,13 +13,21 @@ class Board:
         self.count = 0 # Number of queens placed
         self.board = [ ["_"] * n for unused in range(n)]
         self.solutions = {}
+        self.solutions_count = 0
 
     def print_board(self):
-        for x in self.board:
-            for y in x:
-                #print('|', y, '|', end='')
-                print(y," ", end='')
+        for row in range(0,self.n):
+            for col in range(0,self.n):
+                print(self.board[col][row]," ", end='')
             print()
+
+
+    def board_2_string(self):
+        response = ""
+        for x in self.board:
+            response = response.join(x)
+        logging.debug(response)
+        return response
 
     def place_queen(self,x,y):
         logging.debug("place_queen %i,%i", x, y)
@@ -28,16 +38,23 @@ class Board:
             return
         self.count += 1
 
+    def remove_queen(self,x,y):
+        logging.info("solver: Removing queen: %i,%i", x, y)
+        self.board[x][y] = "_"
+        #logging.debug(self.print_board())
+        self.count -= 1
+        return
+
     def check_n_place_queen(self,x,y):
         logging.debug("check_n_place_queen %i,%i", x,y)
         try:
             if self.check_queen(x,y) == 0:
-                logging.debug("placing queen at %i,%i", x,y)
+                logging.debug("check_n_place_queen: placing queen at %i,%i", x,y)
                 self.board[x][y] = "Q"
             else:
                 return -1
         except IndexError as err:
-            logging.error("Error placing queen %i,%i: %s", x, y,err)
+            logging.error("check_n_place_queen: Error placing queen %i,%i: %s", x, y,err)
             return -1
         self.count += 1
         return 0
@@ -50,11 +67,9 @@ class Board:
         for i in range(self.n):
             if self.board[i][y] == "Q" and i != x:
                 logging.debug("X FAIL!! %i,%i ",i,y)
-                #self.board[i][y] = "X"
                 count += 1
             if self.board[x][i] == "Q" and i != y:
                 logging.debug("Y FAIL!! %i,%i",x,i)
-                #self.board[x][i] = "X"
                 count += 1
 
         # checking diagonal
@@ -77,8 +92,12 @@ class Board:
             start_x = x - ((self.n - 1) - y)    # board offset is 0 so need to decrement board size by 1
             start_y = self.n -1 # board offset is 0 so need to decrement board size by 1
         else:
-            start_x = 0
-            start_y = y + x
+            if x + y >= self.n:
+                start_x = (x + y)-(self.n - 1)
+                start_y = self.n -1
+            else:
+                start_x = 0
+                start_y = y + x
 
         while start_x < self.n and start_y >= 0 and start_y < self.n and x >= 0:
             if self.board[start_x][start_y] == "Q" and start_x != x:
@@ -109,10 +128,6 @@ class Board:
                 y += 1
             y = 0
             x += 1
-        # if queens_failed == 0:
-        #    print("Verified")
-        #else:
-        #    print(queens_failed, "Queens misplaced")
 
         return queens_failed
 
@@ -120,41 +135,68 @@ log = logging.getLogger(__name__)
 
 
 def solver(board,x,y):
-    logging.debug("solver %i,%i", x, y)
-    row = x
+    log.debug("solver %i,%i", x, y)
+    row = y
     col = 0
 
     while board.count < board.n:
-        logging.debug("solver:while %i < %i", board.count, board.n)
-        placed_queen = board.check_n_place_queen(row,col)
+        log.info("solver current state: "
+                      " solutions: %i "
+                      " placed_queens: %i "
+                      " n: %i -- "
+                      " x: %i  "
+                      " y: %i ", board.solutions_count, board.count, board.n, col, row)
+        placed_queen = board.check_n_place_queen(col,row)
 
         if placed_queen == 0:
-            logging.info("Placed queen# %i at position: %i,%i ", board.count,row,col)
-            ret_val = solver(board,row+1,col)
+            log.info("solver: Placed queen# %i at position: %i,%i ", board.count,col,row)
+            #log.debug(board.print_board())
+            ret_val = solver(board,col,row+1)
             if ret_val == -1:
-                logging.debug("unable to place queen on row: %i", row+1)
-                logging.debug("Removing queen: %i,%i",row,col)
-                board.board[row][col] = "_"
-                board.count -= 1
+                log.info("solver: unable to place queen on row: %i", row+1)
+                board.remove_queen(col, row)
                 col += 1
-                if col == board.n:
+                if col >= board.n:
                     return -1
-            else:
-                col = 0
+            elif ret_val == 66:
+                board.remove_queen(col,row)
+                col += 1
         else:
             col += 1
-            if col == board.n:
+            if col >= board.n:
                 return -1
 
-
     if board.count == board.n:
-        return
+        log.info("solver:Found a solution: ")
+        board.solutions_count += 1
+        #log.debug("%s",board.board_2_string())
+        log.debug("\n")
+        #log.debug(board.print_board())
+        #user_input = input("Some input please: ")
+        #board.solutions.update(board.board_2_string())
 
-def main():
+        return 66
 
-    size4 = Board(100)
-    solver(size4,0,0)
-    size4.print_board()
+def main(argv):
+
+    n = 0
+    try:
+        opts, args = getopt.getopt(argv, "hvn:")
+    except getopt.GetoptError:
+        print('test.py -n 8')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('test.py -n 8')
+            sys.exit()
+        elif opt in ("-v", "--verbose"):
+            logging.basicConfig(level=logging.DEBUG)
+        elif opt in ("-n"):
+            n = int(arg)
+    size = Board(n)
+    solver(size,0,0)
+    print("Solutions found ",size.solutions_count)
+
 
 if __name__ == '__main__':
-	main()
+	main(sys.argv[1:])

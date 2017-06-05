@@ -31,11 +31,16 @@ class TestBoardMethods(unittest.TestCase):
         self.assertEqual(test.verify_board(),2, 'Looking for 2 Queen misplaced')
 
     def test_diagonal_fail2(self):
-        test = nqueens.Board(4)
-        test.place_queen(0,3)
-        test.place_queen(3,0)
+        test = nqueens.Board(6)
+        test.place_queen(5,1)
+        test.place_queen(4,2)
         self.assertEqual(test.verify_board(),2, 'Looking for 2 Queen misplaced')
 
+    def test_diagonal_fail3(self):
+        test = nqueens.Board(6)
+        test.place_queen(2,2)
+        test.place_queen(4,0)
+        self.assertEqual(test.verify_board(),2, 'Looking for 2 Queen misplaced')
 
     def test_x_out_of_scope(self):
         test = nqueens.Board(4)
