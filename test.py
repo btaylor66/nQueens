@@ -9,6 +9,12 @@ class TestBoardMethods(unittest.TestCase):
         pass
 
     def test_initialize(self):
+        """Procedure:
+            1. initialize the board
+            ------------
+            Verification:
+            2. check board size
+        """
         test = nqueens.Board(4)
         self.assertEqual(test.n, 4, 'Incorrect Board Size')
 
@@ -47,6 +53,7 @@ class TestBoardMethods(unittest.TestCase):
         test.place_queen(0,0)
         test.place_queen(5,3)
         self.assertEqual(test.verify_board(),0,'ERROR:root:Error placing queen 5,3: list index out of range',)
+        #self.assertRaises(test.verify_board(), IndexError, 'ERROR:root:Error placing queen 5,3: list index out of range', )
 
     def test_correct_size4(self):
         test = nqueens.Board(4)

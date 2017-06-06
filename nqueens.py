@@ -3,6 +3,7 @@
 import sys
 import getopt
 import logging
+import time
 
 #logging.basicConfig(level=logging.ERROR)
 
@@ -34,7 +35,7 @@ class Board:
         try:
            self.board[x][y] = "Q"
         except IndexError as err:
-            logging.error("Error placing queen %i,%i: %s", x, y,err)
+            logging.error("\nError placing queen %i,%i: %s", x, y,err)
             return
         self.count += 1
 
@@ -161,6 +162,8 @@ def solver(board,x,y):
             elif ret_val == 66:
                 board.remove_queen(col,row)
                 col += 1
+                if col >= board.n:
+                    return -1
         else:
             col += 1
             if col >= board.n:
@@ -194,8 +197,11 @@ def main(argv):
         elif opt in ("-n"):
             n = int(arg)
     size = Board(n)
+    start = time.time()
     solver(size,0,0)
-    print("Solutions found ",size.solutions_count)
+    stop = time.time()
+    total_time = stop - start
+    print("Solutions found {} in {}".format(size.solutions_count,total_time))
 
 
 if __name__ == '__main__':
